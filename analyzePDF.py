@@ -44,10 +44,18 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
             blocks = page_dict.get("blocks", [])
             for block in blocks:
                 block_type = block.get("type")
-                if block_type == 0:  # text
-                    text = block.get("text", "").strip()
+                if block_type == 0:  # text block
                     bbox = block.get("bbox")
-                    result_file.write(f"TEXT {bbox}: {text}\n")
+                    result_file.write(f"TEXT BLOCK {bbox}\n")
+                    # Extract font characteristics from spans
+                    for line in block.get("lines", []):
+                        for span in line.get("spans", []):
+                            font = span.get("font")
+                            size = span.get("size")
+                            text = span.get("text", "").strip()
+                            result_file.write(
+                                f"  Font: {font}, Size: {size} -> {text}\n"
+                            )
                 elif block_type == 1:  # image
                     bbox = block.get("bbox")
                     result_file.write(f"IMAGE {bbox}\n")

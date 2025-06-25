@@ -103,8 +103,8 @@ class PDFAnalyzerGUI:
     def run_analysis(self, pdf: str, output: str) -> None:
         """Invoke the analysis module and show a completion dialog."""
         try:
-            analyzePDF.analyze_pdf(pdf, output, self.update_progress)
-            messagebox.showinfo("Done", "Analysis completed")
+            result = analyzePDF.analyze_pdf(pdf, output, self.update_progress)
+            messagebox.showinfo("Done", f"Analysis completed.\nResults: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
 
