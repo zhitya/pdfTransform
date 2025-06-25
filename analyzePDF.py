@@ -11,6 +11,11 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
         output_folder (str): Folder where the analysis result will be saved.
         progress_callback (callable, optional): Function that accepts an int
             indicating progress percentage. Called after each page is processed.
+
+    Notes:
+        Images found in the PDF are extracted to the output folder with file
+        names in the form ``<input>_page<page>_img<number>.<ext>`` where
+        ``<ext>`` is the image type.
     """
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -42,15 +47,46 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
             # Extract text blocks and images as simple elements
             page_dict = page.get_text("dict")
             blocks = page_dict.get("blocks", [])
+
+            # Counter for naming extracted images on this page
+            image_number = 0
             for block in blocks:
                 block_type = block.get("type")
-                if block_type == 0:  # text
-                    text = block.get("text", "").strip()
+                if block_type == 0:  # text block
                     bbox = block.get("bbox")
-                    result_file.write(f"TEXT {bbox}: {text}\n")
+                    result_file.write(f"TEXT BLOCK {bbox}\n")
+                    # Extract font characteristics from spans
+                    for line in block.get("lines", []):
+                        for span in line.get("spans", []):
+                            font = span.get("font")
+                            size = span.get("size")
+                            text = span.get("text", "").strip()
+                            result_file.write(
+                                f"  Font: {font}, Size: {size} -> {text}\n"
+                            )
                 elif block_type == 1:  # image
+                    image_number += 1
                     bbox = block.get("bbox")
-                    result_file.write(f"IMAGE {bbox}\n")
+                    xref = block.get("xref")
+                    if xref:
+                        # Extract the image bytes and determine extension
+                        img_info = doc.extract_image(xref)
+                        ext = img_info.get("ext", "png")
+
+                        # Build a filename that includes page and image numbers
+                        img_name = (
+                            f"{base_name}_page{page_index + 1}_img{image_number}.{ext}"
+                        )
+                        img_path = os.path.join(output_folder, img_name)
+
+                        # Save image to disk
+                        with open(img_path, "wb") as img_file:
+                            img_file.write(img_info.get("image", b""))
+
+                        result_file.write(f"IMAGE {bbox} -> {img_path}\n")
+                    else:
+                        result_file.write(f"IMAGE {bbox}\n")
+
             result_file.write("\n")
 
             # Update progress
