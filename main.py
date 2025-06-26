@@ -5,7 +5,8 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import datetime
-
+import json
+import createPDFA6
 import analyzePDF
 
 
@@ -28,9 +29,48 @@ class PDFAnalyzerGUI:
         # Tkinter variables for entries and labels
         self.pdf_path = tk.StringVar()
         self.output_folder = tk.StringVar()
+        self.suffix = tk.StringVar()
         self.file_info = tk.StringVar()
 
+        self._load_settings()
+
         self._build_widgets()
+
+        # Save parameters whenever they change
+        self.pdf_path.trace_add("write", lambda *_: self._save_settings())
+        self.output_folder.trace_add("write", lambda *_: self._save_settings())
+        self.suffix.trace_add("write", lambda *_: self._save_settings())
+
+        self.show_file_info()
+
+    SETTINGS_FILE = "last_params.json"
+
+    def _load_settings(self) -> None:
+        """Load saved parameters if available."""
+        if os.path.isfile(self.SETTINGS_FILE):
+            try:
+                with open(self.SETTINGS_FILE, "r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            except Exception:
+                data = {}
+            self.pdf_path.set(data.get("pdf_path", ""))
+            self.output_folder.set(data.get("output_folder", ""))
+            self.suffix.set(data.get("suffix", "_new"))
+        else:
+            self.suffix.set("_new")
+
+    def _save_settings(self) -> None:
+        """Persist current parameters to disk."""
+        data = {
+            "pdf_path": self.pdf_path.get(),
+            "output_folder": self.output_folder.get(),
+            "suffix": self.suffix.get(),
+        }
+        try:
+            with open(self.SETTINGS_FILE, "w", encoding="utf-8") as fh:
+                json.dump(data, fh)
+        except Exception:
+            pass
 
     def _build_widgets(self) -> None:
         """Construct all Tkinter widgets for the interface."""
@@ -44,15 +84,22 @@ class PDFAnalyzerGUI:
         tk.Entry(self.root, textvariable=self.output_folder, width=50).grid(row=1, column=1)
         tk.Button(self.root, text="Select", command=self.browse_folder).grid(row=1, column=2)
 
+        # Suffix field
+        tk.Label(self.root, text="Suffix:").grid(row=2, column=0, sticky="w")
+        tk.Entry(self.root, textvariable=self.suffix, width=20).grid(row=2, column=1, sticky="w")
+
         # File info label
-        tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=2, column=0, columnspan=3, sticky="w")
+        tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=3, column=0, columnspan=3, sticky="w")
 
         # Progress bar widget
         self.progress = ttk.Progressbar(self.root, length=400)
-        self.progress.grid(row=3, column=0, columnspan=3, pady=10)
+        self.progress.grid(row=4, column=0, columnspan=3, pady=10)
 
         # Start analysis button
-        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=4, column=0, columnspan=3)
+        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=5, column=0, columnspan=3)
+
+        # Transform button
+        tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=6, column=0, columnspan=3)
 
     def browse_pdf(self) -> None:
         """Prompt the user to select a PDF file."""
@@ -94,6 +141,24 @@ class PDFAnalyzerGUI:
         self.progress['value'] = 0
         thread = threading.Thread(target=self.run_analysis, args=(pdf, output))
         thread.start()
+
+    def start_transform(self) -> None:
+        """Create a new PDF with the chosen suffix and logo."""
+        pdf = self.pdf_path.get()
+        output = self.output_folder.get()
+        suffix = self.suffix.get() or "_new"
+        if not pdf or not os.path.isfile(pdf):
+            messagebox.showerror("Error", "Please select a PDF file.")
+            return
+        if not output:
+            messagebox.showerror("Error", "Please select an output folder.")
+            return
+
+        try:
+            result = createPDFA6.create_pdf(pdf, output, suffix)
+            messagebox.showinfo("Done", f"Created PDF: {result}")
+        except Exception as exc:
+            messagebox.showerror("Error", str(exc))
 
     def update_progress(self, value: int) -> None:
         """Update the progress bar based on percentage value."""

@@ -15,7 +15,9 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
     Notes:
         Images found in the PDF are extracted to the output folder with file
         names in the form ``<input>_page<page>_img<number>.<ext>`` where
-        ``<ext>`` is the image type.
+        ``<ext>`` is the image type. Metadata written to the result file
+        includes the PDF's resolution and page size (in millimeters).
+
     """
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -23,6 +25,19 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
     # Open the document
     doc = fitz.open(pdf_path)
     total_pages = doc.page_count
+
+    # Determine resolution and page size using the first page
+    if total_pages:
+        first_page = doc.load_page(0)
+        pix = first_page.get_pixmap()
+        xres = pix.xres
+        yres = pix.yres
+        rect = first_page.rect
+        width_mm = rect.width * 25.4 / 72
+        height_mm = rect.height * 25.4 / 72
+    else:
+        xres = yres = 0
+        width_mm = height_mm = 0
 
     # Construct result file path
     base_name = os.path.splitext(os.path.basename(pdf_path))[0]
@@ -37,7 +52,11 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
         # Write metadata
         result_file.write(f"PDF Path: {pdf_path}\n")
         result_file.write(f"Size (bytes): {file_size}\n")
-        result_file.write(f"Creation Time: {creation_time}\n\n")
+        result_file.write(f"Creation Time: {creation_time}\n")
+        result_file.write(f"Resolution: {xres:.0f}x{yres:.0f} DPI\n")
+        result_file.write(
+            f"Page Size: {width_mm:.2f}mm x {height_mm:.2f}mm\n\n"
+        )
 
         # Iterate over pages
         for page_index in range(total_pages):
