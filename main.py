@@ -30,6 +30,7 @@ class PDFAnalyzerGUI:
         self.pdf_path = tk.StringVar()
         self.output_folder = tk.StringVar()
         self.suffix = tk.StringVar()
+        self.pattern_path = tk.StringVar()
         self.file_info = tk.StringVar()
 
         self._load_settings()
@@ -40,6 +41,7 @@ class PDFAnalyzerGUI:
         self.pdf_path.trace_add("write", lambda *_: self._save_settings())
         self.output_folder.trace_add("write", lambda *_: self._save_settings())
         self.suffix.trace_add("write", lambda *_: self._save_settings())
+        self.pattern_path.trace_add("write", lambda *_: self._save_settings())
 
         self.show_file_info()
 
@@ -56,8 +58,10 @@ class PDFAnalyzerGUI:
             self.pdf_path.set(data.get("pdf_path", ""))
             self.output_folder.set(data.get("output_folder", ""))
             self.suffix.set(data.get("suffix", "_new"))
+            self.pattern_path.set(data.get("pattern_path", ""))
         else:
             self.suffix.set("_new")
+            self.pattern_path.set("")
 
     def _save_settings(self) -> None:
         """Persist current parameters to disk."""
@@ -65,6 +69,7 @@ class PDFAnalyzerGUI:
             "pdf_path": self.pdf_path.get(),
             "output_folder": self.output_folder.get(),
             "suffix": self.suffix.get(),
+            "pattern_path": self.pattern_path.get(),
         }
         try:
             with open(self.SETTINGS_FILE, "w", encoding="utf-8") as fh:
@@ -88,18 +93,23 @@ class PDFAnalyzerGUI:
         tk.Label(self.root, text="Suffix:").grid(row=2, column=0, sticky="w")
         tk.Entry(self.root, textvariable=self.suffix, width=20).grid(row=2, column=1, sticky="w")
 
+        # Pattern JSON selection
+        tk.Label(self.root, text="Pattern JSON:").grid(row=3, column=0, sticky="w")
+        tk.Entry(self.root, textvariable=self.pattern_path, width=50).grid(row=3, column=1)
+        tk.Button(self.root, text="Browse", command=self.browse_pattern).grid(row=3, column=2)
+
         # File info label
-        tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=3, column=0, columnspan=3, sticky="w")
+        tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=4, column=0, columnspan=3, sticky="w")
 
         # Progress bar widget
         self.progress = ttk.Progressbar(self.root, length=400)
-        self.progress.grid(row=4, column=0, columnspan=3, pady=10)
+        self.progress.grid(row=5, column=0, columnspan=3, pady=10)
 
         # Start analysis button
-        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=5, column=0, columnspan=3)
+        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=6, column=0, columnspan=3)
 
         # Transform button
-        tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=6, column=0, columnspan=3)
+        tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=7, column=0, columnspan=3)
 
     def browse_pdf(self) -> None:
         """Prompt the user to select a PDF file."""
@@ -113,6 +123,12 @@ class PDFAnalyzerGUI:
         folder = filedialog.askdirectory()
         if folder:
             self.output_folder.set(folder)
+
+    def browse_pattern(self) -> None:
+        """Prompt the user to select a JSON pattern file."""
+        path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        if path:
+            self.pattern_path.set(path)
 
     def show_file_info(self) -> None:
         """Display path, size and creation time of the chosen PDF."""
@@ -154,8 +170,9 @@ class PDFAnalyzerGUI:
             messagebox.showerror("Error", "Please select an output folder.")
             return
 
+        pattern = self.pattern_path.get() or None
         try:
-            result = createPDFA6.create_pdf(pdf, output, suffix)
+            result = createPDFA6.create_pdf(pdf, output, suffix, pattern_path=pattern)
             messagebox.showinfo("Done", f"Created PDF: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
