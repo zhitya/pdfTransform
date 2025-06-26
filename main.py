@@ -44,7 +44,6 @@ class PDFAnalyzerGUI:
         self.output_folder.trace_add("write", lambda *_: self._save_settings())
         self.suffix.trace_add("write", lambda *_: self._save_settings())
         self.pattern_path.trace_add("write", lambda *_: self._save_settings())
-
         self.show_file_info()
 
     SETTINGS_FILE = "last_params.json"
@@ -72,6 +71,7 @@ class PDFAnalyzerGUI:
             "output_folder": self.output_folder.get(),
             "suffix": self.suffix.get(),
             "pattern_path": self.pattern_path.get(),
+
         }
         try:
             with open(self.SETTINGS_FILE, "w", encoding="utf-8") as fh:
@@ -175,6 +175,7 @@ class PDFAnalyzerGUI:
         pattern = self.pattern_path.get() or None
         try:
             result = createPDFA6.create_pdf(pdf, output, suffix, pattern_path=pattern)
+
             messagebox.showinfo("Done", f"Created PDF: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))

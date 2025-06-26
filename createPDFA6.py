@@ -1,4 +1,5 @@
 import os
+
 import json
 import tempfile
 import fitz  # PyMuPDF
@@ -10,7 +11,6 @@ import segno
 def mm_to_pt(mm: float) -> float:
     """Convert millimeters to PDF points."""
     return mm * 72 / 25.4
-
 
 def _code128_image(data: str) -> str:
     """Create a Code128 barcode image and return its file path."""
