@@ -6,9 +6,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import datetime
 import json
-
 import createPDFA6
-
 import analyzePDF
 
 

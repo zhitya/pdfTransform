@@ -17,6 +17,7 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
         names in the form ``<input>_page<page>_img<number>.<ext>`` where
         ``<ext>`` is the image type. Metadata written to the result file
         includes the PDF's resolution and page size (in millimeters).
+
     """
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -65,6 +66,7 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
             # Extract text blocks and images as simple elements
             page_dict = page.get_text("dict")
             blocks = page_dict.get("blocks", [])
+
             # Counter for naming extracted images on this page
             image_number = 0
             for block in blocks:
@@ -103,6 +105,7 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
                         result_file.write(f"IMAGE {bbox} -> {img_path}\n")
                     else:
                         result_file.write(f"IMAGE {bbox}\n")
+
             result_file.write("\n")
 
             # Update progress
