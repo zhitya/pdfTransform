@@ -71,7 +71,6 @@ class PDFAnalyzerGUI:
             "output_folder": self.output_folder.get(),
             "suffix": self.suffix.get(),
             "pattern_path": self.pattern_path.get(),
-
         }
         try:
             with open(self.SETTINGS_FILE, "w", encoding="utf-8") as fh:
@@ -175,7 +174,6 @@ class PDFAnalyzerGUI:
         pattern = self.pattern_path.get() or None
         try:
             result = createPDFA6.create_pdf(pdf, output, suffix, pattern_path=pattern)
-
             messagebox.showinfo("Done", f"Created PDF: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))

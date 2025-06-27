@@ -1,5 +1,4 @@
 import os
-
 import json
 import tempfile
 import fitz  # PyMuPDF
@@ -28,9 +27,7 @@ def _datamatrix_image(data: str) -> str:
     dm.save(temp.name, scale=3)
     return temp.name
 
-
 from typing import Optional
-
 
 def create_pdf(
     pdf_path: str,
@@ -69,6 +66,8 @@ def create_pdf(
         try:
             with open(pattern_path, "r", encoding="utf-8") as fh:
                 pattern = json.load(fh)
+            if not isinstance(pattern, dict):
+                pattern = {}
         except Exception:
             pattern = {}
 
