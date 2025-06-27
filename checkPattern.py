@@ -3,11 +3,11 @@
 """Utilities to render a JSON layout pattern as a PDF for preview.
 
 This module interprets pattern JSON files describing blocks inside a page
-section.  The JSON may define one or more sections using the following
-structure::
+section.  All coordinates and sizes are expected to be in **PDF points**. The
+JSON may define one or more sections using the following structure::
 
     {
-        "page_size_mm": [210, 297],
+        "page_size": [595, 842],
         "sections": [
             {
                 "section": 1,
@@ -35,7 +35,6 @@ so that the output shows three sections stacked vertically.  Each block is
 drawn with a 1px black border and a light grey fill.
 """
 
-
 from __future__ import annotations
 
 import os
@@ -43,19 +42,22 @@ import json
 import fitz  # PyMuPDF
 
 
-def mm_to_pt(mm: float) -> float:
-    """Convert millimeters to PDF points."""
-    return mm * 72 / 25.4
+def to_pt(value: float) -> float:
+    """Return ``value`` unchanged as pattern coordinates are already in points."""
+    return float(value)
+
 
 def _draw_text_block(page: fitz.Page, block: dict, y_offset_pt: float, index: int) -> None:
     """Draw a text block defined in the pattern."""
     try:
         x_mm, y_mm = block.get("position", [0, 0])
         w_mm, h_mm = block.get("size", [10, 10])
-        x = mm_to_pt(float(x_mm))
-        y = mm_to_pt(float(y_mm)) + y_offset_pt
-        w = mm_to_pt(float(w_mm))
-        h = mm_to_pt(float(h_mm))
+
+        x = to_pt(float(x_mm))
+        y = to_pt(float(y_mm)) + y_offset_pt
+        w = to_pt(float(w_mm))
+        h = to_pt(float(h_mm))
+
     except Exception:
         return
 
@@ -82,10 +84,11 @@ def _draw_image(page: fitz.Page, image: dict, y_offset_pt: float) -> None:
     try:
         x_mm, y_mm = image.get("position", [0, 0])
         w_mm, h_mm = image.get("size", [10, 10])
-        x = mm_to_pt(float(x_mm))
-        y = mm_to_pt(float(y_mm)) + y_offset_pt
-        w = mm_to_pt(float(w_mm))
-        h = mm_to_pt(float(h_mm))
+        x = to_pt(float(x_mm))
+        y = to_pt(float(y_mm)) + y_offset_pt
+        w = to_pt(float(w_mm))
+        h = to_pt(float(h_mm))
+
     except Exception:
         return
 
@@ -106,10 +109,18 @@ def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
     with open(pattern_path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    page_size = [210, 297]
-    if isinstance(data, dict) and isinstance(data.get("page_size_mm"), list):
-        size = data.get("page_size_mm")
-        if len(size) == 2 and all(isinstance(v, (int, float)) for v in size):
+
+    page_size = [595, 842]
+    if isinstance(data, dict):
+        size = None
+        if isinstance(data.get("page_size"), list):
+            size = data.get("page_size")
+        elif isinstance(data.get("page_size_pt"), list):
+            size = data.get("page_size_pt")
+        elif isinstance(data.get("page_size_mm"), list):
+            size = data.get("page_size_mm")
+        if isinstance(size, list) and len(size) == 2 and all(isinstance(v, (int, float)) for v in size):
+
             page_size = size
 
     sections = []
@@ -122,8 +133,10 @@ def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
 
     os.makedirs(output_folder, exist_ok=True)
     doc = fitz.open()
-    width_pt = mm_to_pt(page_size[0])
-    height_pt = mm_to_pt(page_size[1])
+
+    width_pt = to_pt(page_size[0])
+    height_pt = to_pt(page_size[1])
+
     page = doc.new_page(width=width_pt, height=height_pt)
 
     section_height = height_pt / 3
