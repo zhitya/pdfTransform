@@ -11,10 +11,10 @@ def analyze_pdf(pdf_path, output_folder):
         output_folder (str): Folder where the analysis result will be saved.
 
     Notes:
-        Images found in the PDF are extracted to the output folder with file
-        names in the form ``<input>_page<page>_img<number>.<ext>`` where
-        ``<ext>`` is the image type. Metadata written to the result file
-        includes the PDF's resolution and page size (in millimeters).
+        Metadata written to the result file includes the PDF's resolution and
+        page size in millimeters. Image blocks are recorded but no longer
+        extracted or saved as separate files.
+
     """
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -60,12 +60,10 @@ def analyze_pdf(pdf_path, output_folder):
             page = doc.load_page(page_index)
             result_file.write(f"=== Page {page_index + 1} ===\n")
 
-            # Extract text blocks and images as simple elements
+            # Extract text and image blocks as simple elements
             page_dict = page.get_text("dict")
             blocks = page_dict.get("blocks", [])
 
-            # Counter for naming extracted images on this page
-            image_number = 0
             for block in blocks:
                 block_type = block.get("type")
                 if block_type == 0:  # text block
@@ -81,27 +79,10 @@ def analyze_pdf(pdf_path, output_folder):
                                 f"  Font: {font}, Size: {size} -> {text}\n"
                             )
                 elif block_type == 1:  # image
-                    image_number += 1
+
                     bbox = block.get("bbox")
-                    xref = block.get("xref")
-                    if xref:
-                        # Extract the image bytes and determine extension
-                        img_info = doc.extract_image(xref)
-                        ext = img_info.get("ext", "png")
+                    result_file.write(f"IMAGE {bbox}\n")
 
-                        # Build a filename that includes page and image numbers
-                        img_name = (
-                            f"{base_name}_page{page_index + 1}_img{image_number}.{ext}"
-                        )
-                        img_path = os.path.join(output_folder, img_name)
-
-                        # Save image to disk
-                        with open(img_path, "wb") as img_file:
-                            img_file.write(img_info.get("image", b""))
-
-                        result_file.write(f"IMAGE {bbox} -> {img_path}\n")
-                    else:
-                        result_file.write(f"IMAGE {bbox}\n")
             result_file.write("\n")
 
     return result_path

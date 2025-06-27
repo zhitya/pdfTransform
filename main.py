@@ -3,9 +3,7 @@
 import os
 import threading
 import tkinter as tk
-
 from tkinter import filedialog, messagebox
-
 import datetime
 import json
 
@@ -105,13 +103,11 @@ class PDFAnalyzerGUI:
         # File info label
         tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=4, column=0, columnspan=3, sticky="w")
 
-
         # Start analysis button
         tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=5, column=0, columnspan=3)
 
         # Transform button
         tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=6, column=0, columnspan=3)
-
 
     def browse_pdf(self) -> None:
         """Prompt the user to select a PDF file."""
@@ -176,7 +172,6 @@ class PDFAnalyzerGUI:
             messagebox.showinfo("Done", f"Created PDF: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
-
 
     def run_analysis(self, pdf: str, output: str) -> None:
         """Invoke the analysis module and show a completion dialog."""
