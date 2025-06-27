@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 
 
 def analyze_pdf(pdf_path, output_folder):
+
     """Analyze a PDF document and save page elements to a text file.
 
     Args:

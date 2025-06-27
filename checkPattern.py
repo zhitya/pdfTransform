@@ -1,4 +1,5 @@
 # coding: utf-8
+
 """Utilities to render a JSON layout pattern as a PDF for preview.
 
 This module interprets pattern JSON files describing blocks inside a page
@@ -51,10 +52,12 @@ def _draw_text_block(page: fitz.Page, block: dict, y_offset_pt: float, index: in
     try:
         x_mm, y_mm = block.get("position", [0, 0])
         w_mm, h_mm = block.get("size", [10, 10])
+
         x = to_pt(float(x_mm))
         y = to_pt(float(y_mm)) + y_offset_pt
         w = to_pt(float(w_mm))
         h = to_pt(float(h_mm))
+
     except Exception:
         return
 
@@ -85,6 +88,7 @@ def _draw_image(page: fitz.Page, image: dict, y_offset_pt: float) -> None:
         y = to_pt(float(y_mm)) + y_offset_pt
         w = to_pt(float(w_mm))
         h = to_pt(float(h_mm))
+
     except Exception:
         return
 
@@ -98,11 +102,13 @@ def _draw_image(page: fitz.Page, image: dict, y_offset_pt: float) -> None:
 
 def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
     """Create a PDF visualizing the sections defined in ``pattern_path``."""
+
     if not os.path.isfile(pattern_path):
         raise FileNotFoundError(pattern_path)
 
     with open(pattern_path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
+
 
     page_size = [595, 842]
     if isinstance(data, dict):
@@ -114,6 +120,7 @@ def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
         elif isinstance(data.get("page_size_mm"), list):
             size = data.get("page_size_mm")
         if isinstance(size, list) and len(size) == 2 and all(isinstance(v, (int, float)) for v in size):
+
             page_size = size
 
     sections = []
@@ -126,8 +133,10 @@ def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
 
     os.makedirs(output_folder, exist_ok=True)
     doc = fitz.open()
+
     width_pt = to_pt(page_size[0])
     height_pt = to_pt(page_size[1])
+
     page = doc.new_page(width=width_pt, height=height_pt)
 
     section_height = height_pt / 3
