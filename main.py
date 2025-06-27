@@ -3,7 +3,9 @@
 import os
 import threading
 import tkinter as tk
-from tkinter import filedialog, ttk, messagebox
+
+from tkinter import filedialog, messagebox
+
 import datetime
 import json
 
@@ -44,6 +46,7 @@ class PDFAnalyzerGUI:
         self.output_folder.trace_add("write", lambda *_: self._save_settings())
         self.suffix.trace_add("write", lambda *_: self._save_settings())
         self.pattern_path.trace_add("write", lambda *_: self._save_settings())
+
         self.show_file_info()
 
     SETTINGS_FILE = "last_params.json"
@@ -102,15 +105,13 @@ class PDFAnalyzerGUI:
         # File info label
         tk.Label(self.root, textvariable=self.file_info, justify="left").grid(row=4, column=0, columnspan=3, sticky="w")
 
-        # Progress bar widget
-        self.progress = ttk.Progressbar(self.root, length=400)
-        self.progress.grid(row=5, column=0, columnspan=3, pady=10)
 
         # Start analysis button
-        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=6, column=0, columnspan=3)
+        tk.Button(self.root, text="Analyze", command=self.start_analysis).grid(row=5, column=0, columnspan=3)
 
         # Transform button
-        tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=7, column=0, columnspan=3)
+        tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=6, column=0, columnspan=3)
+
 
     def browse_pdf(self) -> None:
         """Prompt the user to select a PDF file."""
@@ -154,8 +155,6 @@ class PDFAnalyzerGUI:
             messagebox.showerror("Error", "Please select an output folder.")
             return
 
-        # Reset progress bar and run analysis
-        self.progress['value'] = 0
         thread = threading.Thread(target=self.run_analysis, args=(pdf, output))
         thread.start()
 
@@ -178,15 +177,12 @@ class PDFAnalyzerGUI:
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
 
-    def update_progress(self, value: int) -> None:
-        """Update the progress bar based on percentage value."""
-        self.progress['value'] = value
-        self.root.update_idletasks()
 
     def run_analysis(self, pdf: str, output: str) -> None:
         """Invoke the analysis module and show a completion dialog."""
         try:
-            result = analyzePDF.analyze_pdf(pdf, output, self.update_progress)
+            result = analyzePDF.analyze_pdf(pdf, output)
+
             messagebox.showinfo("Done", f"Analysis completed.\nResults: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))

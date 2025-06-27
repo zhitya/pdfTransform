@@ -2,15 +2,13 @@ import os
 import datetime
 import fitz  # PyMuPDF
 
+def analyze_pdf(pdf_path, output_folder):
 
-def analyze_pdf(pdf_path, output_folder, progress_callback=None):
     """Analyze a PDF document and save page elements to a text file.
 
     Args:
         pdf_path (str): Path to the input PDF document.
         output_folder (str): Folder where the analysis result will be saved.
-        progress_callback (callable, optional): Function that accepts an int
-            indicating progress percentage. Called after each page is processed.
 
     Notes:
         Images found in the PDF are extracted to the output folder with file
@@ -105,13 +103,5 @@ def analyze_pdf(pdf_path, output_folder, progress_callback=None):
                     else:
                         result_file.write(f"IMAGE {bbox}\n")
             result_file.write("\n")
-
-            # Update progress
-            if progress_callback:
-                progress = int((page_index + 1) * 100 / total_pages)
-                progress_callback(progress)
-
-    if progress_callback:
-        progress_callback(100)
 
     return result_path
