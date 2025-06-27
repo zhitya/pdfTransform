@@ -2,8 +2,8 @@ import os
 import datetime
 import fitz  # PyMuPDF
 
-
 def analyze_pdf(pdf_path, output_folder):
+
     """Analyze a PDF document and save page elements to a text file.
 
     Args:
@@ -63,6 +63,7 @@ def analyze_pdf(pdf_path, output_folder):
             # Extract text blocks and images as simple elements
             page_dict = page.get_text("dict")
             blocks = page_dict.get("blocks", [])
+
             # Counter for naming extracted images on this page
             image_number = 0
             for block in blocks:
