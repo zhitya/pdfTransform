@@ -2,6 +2,7 @@ import os
 import datetime
 import fitz  # PyMuPDF
 
+
 def analyze_pdf(pdf_path, output_folder):
 
     """Analyze a PDF document and save page elements to a text file.
@@ -14,7 +15,6 @@ def analyze_pdf(pdf_path, output_folder):
         Metadata written to the result file includes the PDF's resolution and
         page size in millimeters. Image blocks are recorded but no longer
         extracted or saved as separate files.
-
     """
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -79,7 +79,6 @@ def analyze_pdf(pdf_path, output_folder):
                                 f"  Font: {font}, Size: {size} -> {text}\n"
                             )
                 elif block_type == 1:  # image
-
                     bbox = block.get("bbox")
                     result_file.write(f"IMAGE {bbox}\n")
 

@@ -8,9 +8,8 @@ import datetime
 import json
 
 import createPDFA6
-
 import analyzePDF
-
+import checkPattern
 
 def bytes_to_human(size):
     """Convert a byte value to a human readable string."""
@@ -109,6 +108,9 @@ class PDFAnalyzerGUI:
         # Transform button
         tk.Button(self.root, text="Transform", command=self.start_transform).grid(row=6, column=0, columnspan=3)
 
+        # Check Pattern button
+        tk.Button(self.root, text="Check Pattern", command=self.start_check_pattern).grid(row=7, column=0, columnspan=3)
+
     def browse_pdf(self) -> None:
         """Prompt the user to select a PDF file."""
         path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
@@ -173,11 +175,26 @@ class PDFAnalyzerGUI:
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
 
+    def start_check_pattern(self) -> None:
+        """Render the selected pattern JSON as a PDF preview."""
+        pattern = self.pattern_path.get()
+        output = self.output_folder.get()
+        if not pattern or not os.path.isfile(pattern):
+            messagebox.showerror("Error", "Please select a pattern JSON file.")
+            return
+        if not output:
+            messagebox.showerror("Error", "Please select an output folder.")
+            return
+        try:
+            result = checkPattern.render_pattern_pdf(pattern, output)
+            messagebox.showinfo("Done", f"Pattern PDF: {result}")
+        except Exception as exc:
+            messagebox.showerror("Error", str(exc))
+
     def run_analysis(self, pdf: str, output: str) -> None:
         """Invoke the analysis module and show a completion dialog."""
         try:
             result = analyzePDF.analyze_pdf(pdf, output)
-
             messagebox.showinfo("Done", f"Analysis completed.\nResults: {result}")
         except Exception as exc:
             messagebox.showerror("Error", str(exc))
