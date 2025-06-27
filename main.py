@@ -8,8 +8,10 @@ import datetime
 import json
 
 import createPDFA6
+
 import analyzePDF
 import checkPattern
+
 
 def bytes_to_human(size):
     """Convert a byte value to a human readable string."""

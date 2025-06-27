@@ -63,7 +63,6 @@ def analyze_pdf(pdf_path, output_folder):
             # Extract text and image blocks as simple elements
             page_dict = page.get_text("dict")
             blocks = page_dict.get("blocks", [])
-
             for block in blocks:
                 block_type = block.get("type")
                 if block_type == 0:  # text block
@@ -81,7 +80,6 @@ def analyze_pdf(pdf_path, output_folder):
                 elif block_type == 1:  # image
                     bbox = block.get("bbox")
                     result_file.write(f"IMAGE {bbox}\n")
-
             result_file.write("\n")
 
     return result_path

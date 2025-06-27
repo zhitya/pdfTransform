@@ -1,5 +1,40 @@
 # coding: utf-8
-"""Utilities to render a JSON layout pattern as a PDF for preview."""
+
+"""Utilities to render a JSON layout pattern as a PDF for preview.
+
+This module interprets pattern JSON files describing blocks inside a page
+section.  The JSON may define one or more sections using the following
+structure::
+
+    {
+        "page_size_mm": [210, 297],
+        "sections": [
+            {
+                "section": 1,
+                "image": {
+                    "blockid": "logoimg",
+                    "position": [8.5, 8.5],
+                    "size": [113.39, 70.87]
+                },
+                "text_blocks": [
+                    {
+                        "blockid": "barcodeshort",
+                        "position": [184.25, 64.23],
+                        "size": [255.97, 13.74],
+                        "lines": [
+                            {"font": "Helvetica", "size_pt": 10, "text": "950240000"}
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+
+If a single section is provided, it will be repeated three times on the page
+so that the output shows three sections stacked vertically.  Each block is
+drawn with a 1px black border and a light grey fill.
+"""
+
 
 from __future__ import annotations
 
@@ -12,71 +47,106 @@ def mm_to_pt(mm: float) -> float:
     """Convert millimeters to PDF points."""
     return mm * 72 / 25.4
 
+def _draw_text_block(page: fitz.Page, block: dict, y_offset_pt: float, index: int) -> None:
+    """Draw a text block defined in the pattern."""
+    try:
+        x_mm, y_mm = block.get("position", [0, 0])
+        w_mm, h_mm = block.get("size", [10, 10])
+        x = mm_to_pt(float(x_mm))
+        y = mm_to_pt(float(y_mm)) + y_offset_pt
+        w = mm_to_pt(float(w_mm))
+        h = mm_to_pt(float(h_mm))
+    except Exception:
+        return
+
+    rect = fitz.Rect(x, y, x + w, y + h)
+    gray = 0.9 - (index % 5) * 0.1
+    page.draw_rect(rect, color=(0, 0, 0), fill=(gray, gray, gray), width=1)
+
+    lines = block.get("lines", [])
+    if isinstance(lines, list) and lines:
+        text = "\n".join(str(line.get("text", "")) for line in lines)
+        font_size = lines[0].get("size_pt", 10)
+        font_name = lines[0].get("font", "helv")
+        page.insert_textbox(
+            rect,
+            text,
+            fontsize=float(font_size),
+            fontname=str(font_name),
+            align=0,
+        )
+
+
+def _draw_image(page: fitz.Page, image: dict, y_offset_pt: float) -> None:
+    """Draw an image placeholder or insert an image if a path is provided."""
+    try:
+        x_mm, y_mm = image.get("position", [0, 0])
+        w_mm, h_mm = image.get("size", [10, 10])
+        x = mm_to_pt(float(x_mm))
+        y = mm_to_pt(float(y_mm)) + y_offset_pt
+        w = mm_to_pt(float(w_mm))
+        h = mm_to_pt(float(h_mm))
+    except Exception:
+        return
+
+    rect = fitz.Rect(x, y, x + w, y + h)
+    path = image.get("path")
+    if path and os.path.isfile(path):
+        page.insert_image(rect, filename=path)
+    else:
+        page.draw_rect(rect, color=(0, 0, 0), fill=(0.85, 0.85, 0.85), width=1)
+
 
 def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
-    """Create a PDF visualizing the blocks defined in ``pattern_path``.
+    """Create a PDF visualizing the sections defined in ``pattern_path``."""
 
-    The JSON file must define ``page_size_mm`` as ``[width, height]`` and a
-    ``blocks`` list. Each block entry should have ``blockid``, ``x_mm``,
-    ``y_mm``, ``width_mm``, ``height_mm`` and optional ``lines`` (list of text
-    strings). Blocks are drawn with a 1px black border and filled with varying
-    gray shades.
-
-    Args:
-        pattern_path: Path to the JSON pattern file.
-        output_folder: Directory where the PDF preview will be saved.
-
-    Returns:
-        The full path to the generated PDF file.
-    """
     if not os.path.isfile(pattern_path):
         raise FileNotFoundError(pattern_path)
 
     with open(pattern_path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    if not isinstance(data, dict):
-        raise ValueError("Pattern file must contain a JSON object")
+    page_size = [210, 297]
+    if isinstance(data, dict) and isinstance(data.get("page_size_mm"), list):
+        size = data.get("page_size_mm")
+        if len(size) == 2 and all(isinstance(v, (int, float)) for v in size):
+            page_size = size
 
-    page_size = data.get("page_size_mm", [210, 297])
-    if (
-        not isinstance(page_size, (list, tuple))
-        or len(page_size) != 2
-        or not all(isinstance(x, (int, float)) for x in page_size)
-    ):
-        page_size = [210, 297]
-
-    blocks = data.get("blocks", [])
-    if not isinstance(blocks, list):
-        blocks = []
+    sections = []
+    if isinstance(data, dict) and isinstance(data.get("sections"), list):
+        sections = data["sections"]
+    elif isinstance(data, list):
+        sections = data
+    else:
+        sections = [data]
 
     os.makedirs(output_folder, exist_ok=True)
     doc = fitz.open()
-    page = doc.new_page(width=mm_to_pt(page_size[0]), height=mm_to_pt(page_size[1]))
+    width_pt = mm_to_pt(page_size[0])
+    height_pt = mm_to_pt(page_size[1])
+    page = doc.new_page(width=width_pt, height=height_pt)
 
-    for idx, block in enumerate(blocks):
-        try:
-            x = mm_to_pt(float(block.get("x_mm", 0)))
-            y = mm_to_pt(float(block.get("y_mm", 0)))
-            w = mm_to_pt(float(block.get("width_mm", 10)))
-            h = mm_to_pt(float(block.get("height_mm", 10)))
-        except Exception:
-            continue
-        rect = fitz.Rect(x, y, x + w, y + h)
+    section_height = height_pt / 3
 
-        gray = 0.9 - (idx % 5) * 0.1
-        page.draw_rect(rect, color=(0, 0, 0), fill=(gray, gray, gray), width=1)
-
-        lines = block.get("lines", [])
-        if isinstance(lines, list) and lines:
-            text = "\n".join(str(t) for t in lines)
-            page.insert_textbox(
-                rect,
-                text,
-                fontsize=10,
-                fontname="helv",
-                align=0,
-            )
+    if len(sections) == 1 and sections[0].get("section") is None:
+        # Only a single section definition without explicit section number -> repeat 3 times
+        src = sections[0]
+        for i in range(3):
+            y_offset = section_height * i
+            img = src.get("image")
+            if isinstance(img, dict):
+                _draw_image(page, img, y_offset)
+            for idx, tb in enumerate(src.get("text_blocks", [])):
+                _draw_text_block(page, tb, y_offset, idx)
+    else:
+        for sec in sections:
+            sec_num = int(sec.get("section", 1))
+            y_offset = section_height * (sec_num - 1)
+            img = sec.get("image")
+            if isinstance(img, dict):
+                _draw_image(page, img, y_offset)
+            for idx, tb in enumerate(sec.get("text_blocks", [])):
+                _draw_text_block(page, tb, y_offset, idx)
 
     output_name = f"{os.path.splitext(os.path.basename(pattern_path))[0]}.pdf"
     output_path = os.path.join(output_folder, output_name)
