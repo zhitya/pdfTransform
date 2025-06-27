@@ -1,4 +1,5 @@
 # coding: utf-8
+
 """Utilities to render a JSON layout pattern as a PDF for preview.
 
 This module interprets pattern JSON files describing blocks inside a page
@@ -34,6 +35,7 @@ so that the output shows three sections stacked vertically.  Each block is
 drawn with a 1px black border and a light grey fill.
 """
 
+
 from __future__ import annotations
 
 import os
@@ -44,7 +46,6 @@ import fitz  # PyMuPDF
 def mm_to_pt(mm: float) -> float:
     """Convert millimeters to PDF points."""
     return mm * 72 / 25.4
-
 
 def _draw_text_block(page: fitz.Page, block: dict, y_offset_pt: float, index: int) -> None:
     """Draw a text block defined in the pattern."""
@@ -98,6 +99,7 @@ def _draw_image(page: fitz.Page, image: dict, y_offset_pt: float) -> None:
 
 def render_pattern_pdf(pattern_path: str, output_folder: str) -> str:
     """Create a PDF visualizing the sections defined in ``pattern_path``."""
+
     if not os.path.isfile(pattern_path):
         raise FileNotFoundError(pattern_path)
 
