@@ -44,7 +44,6 @@ class PDFAnalyzerGUI:
         self.output_folder.trace_add("write", lambda *_: self._save_settings())
         self.suffix.trace_add("write", lambda *_: self._save_settings())
         self.pattern_path.trace_add("write", lambda *_: self._save_settings())
-
         self.show_file_info()
 
     SETTINGS_FILE = "last_params.json"

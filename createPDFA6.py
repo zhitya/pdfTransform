@@ -11,7 +11,6 @@ def mm_to_pt(mm: float) -> float:
     """Convert millimeters to PDF points."""
     return mm * 72 / 25.4
 
-
 def _code128_image(data: str) -> str:
     """Create a Code128 barcode image and return its file path."""
     code = barcode.get("code128", data, writer=ImageWriter())
@@ -28,9 +27,7 @@ def _datamatrix_image(data: str) -> str:
     dm.save(temp.name, scale=3)
     return temp.name
 
-
 from typing import Optional
-
 
 def create_pdf(
     pdf_path: str,
